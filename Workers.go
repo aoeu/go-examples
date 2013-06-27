@@ -75,7 +75,7 @@ type Worker struct {
 
 func (w *Worker) Work(task int) {
 	fmt.Printf("Worker %d is working on task %d\n", w.Id, task)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	w.Results <- time.Now().Unix()
 	w.FreeWorkers <- w    // put self on the shared availability "queue"
 }
@@ -83,8 +83,8 @@ func (w *Worker) Work(task int) {
 func main() {
 	// Initialize.
 	numWorkers := 3
-	manager := NewManager(numWorkers, 3)
-	for i := 0; i < numWorkers; i++ { /
+	manager := NewManager(numWorkers, 2)
+	for i := 0; i < numWorkers; i++ { 
 		manager.FreeWorkers <- &Worker{i, manager.Results, manager.FreeWorkers}
 	}
 	// Run concurrently.
