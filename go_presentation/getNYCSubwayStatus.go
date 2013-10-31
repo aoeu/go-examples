@@ -1,3 +1,4 @@
+// Download data from the MTA website and print out the train line statuses.
 package main
 
 import (
@@ -6,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 type Line struct {
@@ -14,15 +14,14 @@ type Line struct {
 	Status string `xml:"status"`
 }
 
-type ServiceStatus struct {
+type Service struct {
 	Timestamp  string `xml:"timestamp"`
-	TrainLines []Line `xml:"subway>line"`
+	Trainlines []Line `xml:"subway>line"`
 }
 
 func check(err error) {
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
@@ -30,18 +29,19 @@ func downloadUrl(url string) []byte {
 	resp, err := http.Get(url)
 	check(err)
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	check(err)
-	return data
+	return body
 }
 
 func main() {
 	data := downloadUrl("http://mta.info/status/serviceStatus.txt")
-	status := new(ServiceStatus)
-	err := xml.Unmarshal(data, status)
+	service := new(Service)
+	err := xml.Unmarshal(data, service)
 	check(err)
-	fmt.Println(status.Timestamp)
-	for _, trainLine := range status.TrainLines {
-		fmt.Printf("Train line: %s - %s\n", trainLine.Name, trainLine.Status)
+
+	fmt.Println(service.Timestamp)
+	for i, trainLine := range service.Trainlines {
+		fmt.Printf("%d. Trainline %s is %s\n", i, trainLine.Name, trainLine.Status)
 	}
 }

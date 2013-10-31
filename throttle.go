@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+func printWord(word string, throttle chan bool) {
+	rateLimit := time.After(1 * time.Second)
+	defer func() {
+		<-rateLimit // Blocks until 1 second has passed.
+		<-throttle  // Signal we've finished.
+	}()
+	fmt.Println(word)
+}
+
 func main() {
 	maxGoRoutines := 2
 	throttle := make(chan bool, maxGoRoutines)
@@ -12,14 +21,9 @@ func main() {
 
 	for _, word := range wordsToPrint {
 		throttle <- true // Blocks until we can send to the channel.
-		go func(word string) {
-			defer func() { <-throttle }() // Signal that this go routine has finished.
-			time.Sleep(1 * time.Second)
-			fmt.Println(word)
-		}(word)
+		go printWord(word, throttle)
 	}
-
-	// The below loop will block until all go routines are finished.
+	// Block until all go routines are finished.
 	for i := 0; i < cap(throttle); i++ {
 		throttle <- true
 	}

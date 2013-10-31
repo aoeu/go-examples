@@ -1,4 +1,3 @@
-// This program reads URLs from a file, downloads them in parallel, and prints the titles.
 package main
 
 import (
@@ -6,7 +5,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -14,31 +12,45 @@ import (
 
 func check(err error) {
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
-func readFile(fileName string) []string {
+func main() {
+	urls := readFile("urls.txt")
+
+	fmt.Println("Synchronous downloading...")
+	start := time.Now()
+	downloadUrlsSync(urls)
+	fmt.Println(time.Now().Sub(start))
+
+	fmt.Println("Async...")
+	start = time.Now()
+	downloadUrls(urls)
+	fmt.Println(time.Now().Sub(start))
+}
+
+func readFile(fileName string) (lines []string) {
 	data, err := ioutil.ReadFile(fileName)
 	check(err)
-	lines := strings.Split(string(data), "\n")
+	lines = strings.Split(string(data), "\n")
 	return lines[0 : len(lines)-1]
 }
 
-func scrapeTitle(url string, titles chan string, wg *sync.WaitGroup) {
-	doc, err := goquery.NewDocument(url)
-	check(err)
-	titles <- doc.Find("#section_0").Text()
-	wg.Done()
+func downloadUrlsSync(urls []string) {
+	for _, url := range urls {
+		doc, err := goquery.NewDocument(url)
+		check(err)
+		fmt.Println(doc.Find("#section_0").Text())
+	}
 }
 
-func downloadAsync(urls []string) {
+func downloadUrls(urls []string) {
 	var wg sync.WaitGroup
 	titles := make(chan string, len(urls))
 	for _, url := range urls {
 		wg.Add(1)
-		go scrapeTitle(url, titles, &wg)
+		go scrape(url, titles, &wg)
 	}
 	wg.Wait()
 	close(titles)
@@ -47,24 +59,9 @@ func downloadAsync(urls []string) {
 	}
 }
 
-func downloadSync(urls []string) {
-	for _, url := range urls {
-		doc, err := goquery.NewDocument(url)
-		check(err)
-		fmt.Println(doc.Find("#section_0").Text())
-	}
-}
-
-func main() {
-	urls := readFile("urls.txt")
-
-	start := time.Now()
-	downloadSync(urls)
-	end := time.Now()
-	fmt.Println(end.Sub(start))
-
-	start = time.Now()
-	downloadAsync(urls)
-	end = time.Now()
-	fmt.Println(end.Sub(start))
+func scrape(url string, titles chan string, wg *sync.WaitGroup) {
+	doc, err := goquery.NewDocument(url)
+	check(err)
+	titles <- doc.Find("#section_0").Text()
+	wg.Done()
 }
