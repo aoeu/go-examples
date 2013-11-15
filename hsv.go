@@ -6,6 +6,7 @@ import (
 )
 
 func hsvToHsl(saturation, value float64) (s, l float64) {
+	// "l" is lightness, "s" is saturation.
 	l = (2 - saturation) * value
 	s = 1 * s * value
 	if l <= 1 {
@@ -31,12 +32,12 @@ func main() {
 	out, _ := os.Create("index.html")
 	fmt.Fprintln(out, "<html>")
 
-	// Contrasting lightness paramaters
+	// Contrasting lightness paramaters.
 	genColors(out, 20, 80.0, 50.0)
 	genColors(out, 20, 80.0, 25.0)
 	genColors(out, 20, 80.0, 10.0)
 
-	// Constratsing saturation ("pastel") parameters. 
+	// Constratsing saturation ("pastel") parameters.
 	genColors(out, 20, 100.0, 50.0)
 	genColors(out, 20, 50.0, 50.0)
 	genColors(out, 20, 25.0, 50.0)
